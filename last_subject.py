@@ -1,5 +1,5 @@
 import torch
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 import torch.nn as nn
 import torch.optim as optim
 import time
@@ -22,14 +22,16 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # model instance
-model = CustomNetwork()
+model = models.resnet50(pretrained=True)
+model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)  # Adjust to accept 1 channel input
+model.fc = nn.Linear(model.fc.in_features, 10)  # Adjust the final layer to output 10 classes for FashionMNIST
 
 # model on GPU
 model.to(device)
 
 # loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.003)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # train model
 epochs = 10

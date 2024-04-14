@@ -2,9 +2,11 @@ import torch
 from torchvision import datasets, transforms
 import torch.nn as nn
 import torch.optim as optim
+import time
 
 # import my tools 
 from tools_last.model import CustomNetwork
+
 
 # preprocessing data
 transform = transforms.Compose([transforms.ToTensor(),
@@ -16,8 +18,14 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
 testset = datasets.FashionMNIST('~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
+# data on GPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # model instance
 model = CustomNetwork()
+
+# model on GPU
+model.to(device)
 
 # loss function and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -28,8 +36,8 @@ epochs = 10
 for epoch in range(epochs):
     running_loss = 0
     for images, labels in trainloader:
+        images, labels = images.to(device), labels.to(device)
         optimizer.zero_grad()
-        
         log_ps = model(images)
         loss = criterion(log_ps, labels)
         loss.backward()
@@ -44,8 +52,10 @@ for epoch in range(epochs):
 # evaluate model
 correct = 0
 total = 0
+model.eval()  # Put the model in evaluation mode
 with torch.no_grad():
     for images, labels in testloader:
+        images, labels = images.to(device), labels.to(device)  # Move data to the device
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
@@ -53,5 +63,6 @@ with torch.no_grad():
 
 print(f'Accuracy of the network on the 10000 test images: {100 * correct / total}%')
 
+now = time.strftime("%Y%m%d_%H%M%S")
 # save model
-torch.save(model.state_dict(), './run/fashion_model.pth')
+torch.save(model.state_dict(), f'./run/fashion_model_{now}.pth')
